@@ -1,11 +1,12 @@
 package config
 
-
 import (
 	"fmt"
 	"log"
 	"os"
 	"time"
+
+	. "Backend_Go/internal/entities"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -23,11 +24,11 @@ func ConnectDB() (db *gorm.DB, err error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
 	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
-			SlowThreshold: time.Second, // Slow SQL threshold
-			LogLevel:      logger.Info, // Log level
-			Colorful:      true,        // Disable color
+			SlowThreshold: time.Second,
+			LogLevel:      logger.Info,
+			Colorful:      true,
 		},
 	)
 
@@ -38,22 +39,17 @@ func ConnectDB() (db *gorm.DB, err error) {
 		return nil, err
 	}
 
-	// db.AutoMigrate(
-	// 	&entities.Users{},
-	// 	&entities.Address{},
-	// 	&entities.Sessions{},
-	// 	&entities.Brands{},
-	// 	&entities.Products{},
-	// 	&entities.ProductVariants{},
-	// 	&entities.Orders{},
-	// 	&entities.OrderItem{},
-	// 	&entities.Payments{},
-	// 	&entities.StripeCustomer{},
-	// 	&entities.StripePayments{},
-	// 	&entities.StripeWebhookEvent{},
-	// 	&entities.Transactions{},
-	// )
-
+	db.AutoMigrate(
+		&User{},
+		&Dealer{},
+		&Car{},
+		&CarImage{},
+		&Lead{},
+		&Favorite{},
+		&Review{},
+		&Report{},
+		&RefreshToken{},
+	)
 	fmt.Println("Config Database Successful..")
 	return db, nil
 
