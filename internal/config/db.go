@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	. "Backend_Go/internal/entities"
+	"Backend_Go/internal/entities"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -39,17 +39,22 @@ func ConnectDB() (db *gorm.DB, err error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(
-		&User{},
-		&Dealer{},
-		&Car{},
-		&CarImage{},
-		&Lead{},
-		&Favorite{},
-		&Review{},
-		&Report{},
-		&RefreshToken{},
+	// Auto migrate tables
+	err = db.AutoMigrate(
+		&entities.User{},
+		&entities.Dealer{},
+		&entities.Car{},
+		&entities.CarImage{},
+		&entities.Lead{},
+		&entities.Favorite{},
+		&entities.Review{},
+		&entities.Report{},
+		&entities.RefreshToken{},
 	)
+	if err != nil {
+		log.Fatal("AutoMigrate error:", err)
+	}
+
 	fmt.Println("Config Database Successful..")
 	return db, nil
 

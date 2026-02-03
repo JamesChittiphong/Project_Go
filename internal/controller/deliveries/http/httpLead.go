@@ -1,13 +1,13 @@
 package http
 
 import (
-	"Backend_Go/internal/usecases"
+	"Backend_Go/internal/usecases/lend"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type LeadHandler struct {
-	Usecase *usecases.LeadUsecase
+	Usecase *lend.LeadUsecase
 }
 
 // POST /leads

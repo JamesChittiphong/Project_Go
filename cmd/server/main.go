@@ -19,6 +19,8 @@ func main() {
 
 	app := app.NewApp(db)
 
+	app.Static("/uploads", "./uploads")
+
 	log.Println("Server running on :8081")
 	app.Listen(":8081")
 }

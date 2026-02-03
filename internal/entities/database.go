@@ -10,65 +10,67 @@ type User struct {
 	gorm.Model
 	ID       uint   `gorm:"primaryKey"`
 	Name     string `json:"name"`
-	Email    string `gorm:"uniqueIndex"`
-	Password string
-	Role     string `gorm:"type:varchar(20)"` // customer, dealer, admin
-	IsActive bool   `gorm:"default:true"`
+	Email    string `gorm:"uniqueIndex" json:"email"`
+	Phone    string `gorm:"uniqueIndex" json:"phone"`
+	Password string `json:"password"`
+	Role     string `gorm:"type:varchar(20)" json:"role"`
+	IsActive bool   `gorm:"default:true" json:"is_active"`
 }
 
 type Dealer struct {
 	gorm.Model
-	ID         uint `gorm:"primaryKey"`
-	UserID     uint `gorm:"uniqueIndex"`
-	ShopName   string
-	Phone      string
-	LineID     string
-	Address    string
-	Province   string
-	Latitude   string
-	Longitude  string
-	IsApproved bool `gorm:"default:false"`
+	ID         uint   `gorm:"primaryKey" json:"id"`
+	UserID     uint   `gorm:"uniqueIndex" json:"user_id"`
+	ShopName   string `json:"shop_name"`
+	Phone      string `json:"phone"`
+	LineID     string `json:"line_id"`
+	Address    string `json:"address"`
+	Province   string `json:"province"`
+	Latitude   string `json:"latitude"`
+	Longitude  string `json:"longitude"`
+	IsApproved bool   `gorm:"default:false" json:"is_approved"`
 
-	User User `gorm:"foreignKey:UserID"`
+	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
 type Car struct {
 	gorm.Model
-	DealerID     uint `gorm:"index"`
-	Brand        string
-	ModelName    string
-	Year         int
-	Mileage      int
-	Price        float64
-	CarType      string // sedan, suv, pickup
-	FuelType     string
-	Transmission string
-	Color        string
-	Description  string
-	Status       string `gorm:"type:varchar(20)"` // available, contacted, sold
-	Views        int    `gorm:"default:0"`
-	IsFeatured   bool   `gorm:"default:false"`
+	DealerID     uint    `gorm:"index" json:"dealer_id"`
+	Brand        string  `json:"brand"`
+	ModelName    string  `json:"model_name"`
+	Year         int     `json:"year"`
+	Mileage      int     `json:"mileage"`
+	Price        float64 `json:"price"`
+	CarType      string  `json:"car_type"`
+	FuelType     string  `json:"fuel_type"`
+	Transmission string  `json:"transmission"`
+	Color        string  `json:"color"`
+	Description  string  `gorm:"type:text" json:"description"`
+	Status       string  `gorm:"type:varchar(20)" json:"status"`
+	Views        int     `gorm:"default:0" json:"views"`
+	IsFeatured   bool    `gorm:"default:false" json:"is_featured"`
 	// Contact / promotion statistics
-	CallCount     int  `gorm:"default:0"`
-	LineCount     int  `gorm:"default:0"`
-	LeadCount     int  `gorm:"default:0"`
-	IsPromoted    bool `gorm:"default:false"`
-	PromotedUntil *time.Time
+	CallCount     int        `gorm:"default:0" json:"call_count"`
+	LineCount     int        `gorm:"default:0" json:"line_count"`
+	LeadCount     int        `gorm:"default:0" json:"lead_count"`
+	IsPromoted    bool       `gorm:"default:false" json:"is_promoted"`
+	PromotedUntil *time.Time `json:"promoted_until"`
 	// Admin moderation
-	IsHidden        bool   `gorm:"default:false"`
-	Flagged         bool   `gorm:"default:false"`
-	ViolationReason string `gorm:"type:text"`
+	IsHidden        bool   `gorm:"default:false" json:"is_hidden"`
+	Flagged         bool   `gorm:"default:false" json:"flagged"`
+	ViolationReason string `gorm:"type:text" json:"violation_reason"`
 
-	Dealer Dealer `gorm:"foreignKey:DealerID"`
+	CarImages []CarImage `gorm:"foreignKey:CarID" json:"car_images"`
+	Dealer    Dealer     `gorm:"foreignKey:DealerID" json:"dealer,omitempty"`
 }
 
 type CarImage struct {
 	gorm.Model
-	CarID     uint `gorm:"index"`
-	ImageURL  string
-	SortOrder int
+	CarID     uint   `gorm:"index" json:"car_id"`
+	ImageURL  string `json:"image_url"`
+	SortOrder int    `json:"sort_order"`
 
-	Car Car `gorm:"foreignKey:CarID"`
+	Car Car `gorm:"foreignKey:CarID" json:"car,omitempty"`
 }
 
 type Lead struct {

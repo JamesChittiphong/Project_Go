@@ -12,11 +12,11 @@ func RequireRole(role string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		auth := c.Get("Authorization")
 		if auth == "" {
-			return c.Status(401).JSON(fiber.Map{"error": "missing authorization"})
+			return c.Status(401).JSON(fiber.Map{"error": "session expired"})
 		}
 		parts := strings.SplitN(auth, " ", 2)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			return c.Status(401).JSON(fiber.Map{"error": "invalid authorization header"})
+			return c.Status(401).JSON(fiber.Map{"error": "session expired"})
 		}
 		tokenStr := parts[1]
 
@@ -24,11 +24,11 @@ func RequireRole(role string) fiber.Handler {
 			return jwtSecret, nil
 		})
 		if err != nil || !token.Valid {
-			return c.Status(401).JSON(fiber.Map{"error": "invalid token"})
+			return c.Status(401).JSON(fiber.Map{"error": "session expired"})
 		}
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			return c.Status(401).JSON(fiber.Map{"error": "invalid token claims"})
+			return c.Status(401).JSON(fiber.Map{"error": "session expired"})
 		}
 		r, _ := claims["role"].(string)
 		idf, _ := claims["user_id"].(float64)
@@ -49,11 +49,11 @@ func RequireAuth() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		auth := c.Get("Authorization")
 		if auth == "" {
-			return c.Status(401).JSON(fiber.Map{"error": "missing authorization"})
+			return c.Status(401).JSON(fiber.Map{"error": "session expired"})
 		}
 		parts := strings.SplitN(auth, " ", 2)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			return c.Status(401).JSON(fiber.Map{"error": "invalid authorization header"})
+			return c.Status(401).JSON(fiber.Map{"error": "session expired"})
 		}
 		tokenStr := parts[1]
 
@@ -61,11 +61,11 @@ func RequireAuth() fiber.Handler {
 			return jwtSecret, nil
 		})
 		if err != nil || !token.Valid {
-			return c.Status(401).JSON(fiber.Map{"error": "invalid token"})
+			return c.Status(401).JSON(fiber.Map{"error": "session expired"})
 		}
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			return c.Status(401).JSON(fiber.Map{"error": "invalid token claims"})
+			return c.Status(401).JSON(fiber.Map{"error": "session expired"})
 		}
 		idf, _ := claims["user_id"].(float64)
 		r, _ := claims["role"].(string)

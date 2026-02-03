@@ -8,6 +8,7 @@ import (
 )
 
 // SetupRoutes รวม route ทั้งระบบ
+// Updated for Production Security & Role Separation
 func SetupRoutes(app *fiber.App,
 	carHandler *http.CarHandler,
 	leadHandler *http.LeadHandler,
@@ -19,78 +20,88 @@ func SetupRoutes(app *fiber.App,
 	adminHandler *http.AdminHandler,
 	authHandler *http.AuthHandler,
 ) {
-	// ==================== PUBLIC ====================
+	// ==================== GLOBAL MIDDLEWARE ====================
+	// Logger, recoverable, cors likely setup in main.go
+
 	api := app.Group("/api")
 
+	// ==================== PUBLIC ====================
 	auth := api.Group("/auth")
 	auth.Post("/register", authHandler.Register)
+	auth.Post("/register-dealer", authHandler.RegisterDealer)
 	auth.Post("/login", authHandler.Login)
 	auth.Post("/refresh", authHandler.Refresh)
 	auth.Post("/logout", authHandler.Logout)
 
-	auth.Post("/register/dealer", authHandler.RegisterDealer)
-	auth.Post("/login", authHandler.Login)
-	auth.Post("/refresh", authHandler.Refresh)
-	auth.Post("/logout", authHandler.Logout)
-
-	// ---------- Cars ----------
+	// Public Resources (Read Only)
 	api.Get("/cars", carHandler.GetCars)
 	api.Get("/cars/:id", carHandler.GetCarDetail)
-	api.Put("/cars/:id", middleware.RequireRole("dealer"), carHandler.UpdateCar)
-	api.Patch("/cars/:id/status", middleware.RequireRole("dealer"), carHandler.SetStatus)
-	api.Post("/cars/:id/contact", carHandler.RecordContact)
-	api.Post("/cars/:id/promote", middleware.RequireRole("dealer"), carHandler.PromoteCar)
-	api.Get("/cars/:id/stats", middleware.RequireRole("dealer"), carHandler.GetStats)
+	api.Get("/cars/:id/images", carImageHandler.GetImages)
 
-	// ---------- Dealers ----------
 	api.Get("/dealers", dealerHandler.GetDealers)
 	api.Get("/dealers/:id", dealerHandler.GetDealer)
-
-	// ---------- Reviews ----------
+	api.Get("/dealers/:id/stats", dealerHandler.GetDealerStats)
 	api.Get("/dealers/:id/reviews", reviewHandler.GetReviewsByDealer)
 
-	// ==================== USER ====================
-	user := api.Group("/users")
+	api.Post("/cars/:id/contact", carHandler.RecordContact)
 
-	user.Post("/", userHandler.CreateUser)
-	user.Get("/:id", userHandler.GetUser)
-	user.Put("/:id", userHandler.UpdateUser)
-	user.Delete("/:id", userHandler.DeleteUser)
+	// ==================== USER (Protected) ====================
+	// Users can access their own profile and favorites
+	users := api.Group("/users", middleware.RequireAuth())
 
-	// ---------- Favorites ----------
-	user.Get("/:id/favorites", favoriteHandler.GetFavoritesByUser)
-	api.Post("/favorites", favoriteHandler.AddFavorite)
+	users.Get("/me", userHandler.GetMe)
+	users.Put("/me", userHandler.UpdateMe)
 
-	// ==================== DEALER ====================
-	dealer := api.Group("/dealers", middleware.RequireRole("dealer"))
+	users.Get("/:id", userHandler.GetUser)
 
-	dealer.Post("/", dealerHandler.CreateDealer)
-	dealer.Put("/:id", dealerHandler.UpdateDealer)
+	// Favorites (Secure Implementation)
+	favorites := api.Group("/favorites", middleware.RequireAuth())
+	favorites.Get("/me", favoriteHandler.GetMyFavorites)
+	favorites.Post("/:car_id", favoriteHandler.AddFavoriteMe)
+	favorites.Delete("/:car_id", favoriteHandler.RemoveFavoriteMe)
 
-	// ---------- Cars (Dealer) ----------
+	// Reviews (User writes review)
+	api.Post("/reviews", middleware.RequireAuth(), reviewHandler.CreateReview)
+	// api.Delete("/reviews/:id", middleware.RequireAuth(), reviewHandler.DeleteReview) // Owner Check needed
+
+	// ==================== DEALER (Protected) ====================
+	dealer := api.Group("/dealer", middleware.RequireRole("dealer"))
+
+	dealer.Get("/me", dealerHandler.GetMyDealer)
+	dealer.Get("/cars", dealerHandler.GetMyCars)   // /dealer/cars -> My cars
+	dealer.Get("/leads", dealerHandler.GetMyLeads) // /dealer/leads -> My leads (To be implemented)
+
+	// Secure Dealer Actions
 	api.Post("/cars", middleware.RequireRole("dealer"), carHandler.CreateCar)
-	api.Delete("/cars/:id", middleware.RequireRole("dealer"), carHandler.DeleteCar)
 
-	// ---------- Leads ----------
-	api.Post("/leads", leadHandler.CreateLead)
-	api.Get("/dealers/:id/leads", middleware.RequireRole("dealer"), leadHandler.GetLeadsByDealer)
+	dealerCars := api.Group("/cars", middleware.RequireRole("dealer"))
+	dealerCars.Put("/:id", carHandler.UpdateCar)    // Handler should check ownership
+	dealerCars.Delete("/:id", carHandler.DeleteCar) // Handler checks ownership
+	dealerCars.Patch("/:id/status", carHandler.SetStatus)
+	dealerCars.Patch("/:id/sold", carHandler.SetSold)           // New
+	dealerCars.Patch("/:id/unpublish", carHandler.SetUnpublish) // New
+	dealerCars.Post("/:id/promote", carHandler.PromoteCar)
+	dealerCars.Post("/:id/images", carImageHandler.AddImages)
 
-	// ---------- Car Images ----------
-	api.Post("/cars/:id/images", middleware.RequireRole("dealer"), carImageHandler.AddImage)
-	api.Get("/cars/:id/images", carImageHandler.GetImages)
-	api.Delete("/images/:id", carImageHandler.DeleteImage)
-
-	// ---------- Reviews ----------
-	api.Post("/reviews", reviewHandler.CreateReview)
-
-	// ==================== ADMIN ====================
-	admin := api.Group("/admin", middleware.RequireRole("admin"))
+	adminMiddleware := middleware.AdminOnly(adminHandler.Usecase)
+	admin := api.Group("/admin", middleware.RequireAuth(), adminMiddleware)
 
 	admin.Get("/users", adminHandler.GetUsers)
 	admin.Get("/dealers", adminHandler.GetDealers)
 	admin.Get("/reports", adminHandler.GetReports)
+
 	admin.Post("/dealers/:id/approve", adminHandler.ApproveDealer)
+	admin.Patch("/dealers/:id/suspend", func(c *fiber.Ctx) error { return c.SendStatus(501) }) // Placeholder
+
+	admin.Get("/cars", func(c *fiber.Ctx) error { return carHandler.GetCars(c) })     // Reuse
+	admin.Get("/cars/flagged", func(c *fiber.Ctx) error { return c.SendStatus(501) }) // Placeholder
+
 	admin.Post("/cars/:id/hide", adminHandler.HideCar)
 	admin.Post("/cars/:id/flag", adminHandler.FlagCar)
 	admin.Delete("/cars/:id", adminHandler.DeleteCar)
+
+	admin.Patch("/users/:id/ban", func(c *fiber.Ctx) error { return c.SendStatus(501) })
+	admin.Patch("/users/:id/unban", func(c *fiber.Ctx) error { return c.SendStatus(501) })
+
+	api.Delete("/users/:id/favorites/:car_id", middleware.RequireAuth(), favoriteHandler.RemoveFavorite) // Verify ID matches token?
 }

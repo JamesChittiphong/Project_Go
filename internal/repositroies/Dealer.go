@@ -1,6 +1,8 @@
 package repositroies
 
 import (
+	"Backend_Go/internal/entities"
+
 	"gorm.io/gorm"
 )
 
@@ -12,8 +14,11 @@ func (r *DealerRepository) Create(dealer interface{}) error {
 func (r *DealerRepository) FindAll(dealers interface{}) error {
 	return r.DB.Find(dealers).Error
 }
-func (r *DealerRepository) FindByID(id uint, dealer interface{}) error {
-	return r.DB.First(dealer, id).Error
+func (r *DealerRepository) FindByID(id uint, dealer *entities.Dealer) error {
+	return r.DB.
+		Preload("User").
+		First(dealer, id).
+		Error
 }
 func (r *DealerRepository) Update(dealer interface{}) error {
 	return r.DB.Save(dealer).Error

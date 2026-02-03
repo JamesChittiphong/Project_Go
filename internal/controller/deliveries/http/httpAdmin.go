@@ -2,13 +2,13 @@ package http
 
 import (
 	"Backend_Go/internal/entities"
-	"Backend_Go/internal/usecases"
+	"Backend_Go/internal/usecases/admin"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 type AdminHandler struct {
-	Usecase *usecases.AdminUsecase
+	Usecase *admin.AdminUsecase
 }
 
 // GET /admin/users
