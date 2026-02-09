@@ -61,6 +61,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		var dealer entities.Dealer
 		if err := h.Usecase.GetDealerByUserID(user.ID, &dealer); err == nil {
 			response["dealer_id"] = dealer.ID
+			response["dealer_status"] = dealer.Status
 		}
 	}
 

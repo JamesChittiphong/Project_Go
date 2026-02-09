@@ -12,16 +12,22 @@ type FavoriteHandler struct {
 }
 
 // POST /favorites
+// POST /favorites
+// POST /favorites
 func (h *FavoriteHandler) AddFavorite(c *fiber.Ctx) error {
-	var fav map[string]interface{}
-	if err := c.BodyParser(&fav); err != nil {
+	var body struct {
+		UserID uint `json:"user_id"`
+		CarID  uint `json:"car_id"`
+	}
+	if err := c.BodyParser(&body); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
-	carID := uint(fav["car_id"].(float64))
-	if err := h.Usecase.AddFavorite(&fav, carID); err != nil {
+
+	status, err := h.Usecase.ToggleFavorite(body.UserID, body.CarID)
+	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(fiber.Map{"message": "เพิ่มรายการโปรดแล้ว"})
+	return c.JSON(fiber.Map{"status": status, "message": "Favorite toggled successfully"})
 }
 
 // GET /users/:id/favorites
@@ -72,16 +78,13 @@ func (h *FavoriteHandler) AddFavoriteMe(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid car id"})
 	}
 
-	// Create map strictly with authenticated user
-	fav := map[string]interface{}{
-		"user_id": float64(uid.(uint)),
-		"car_id":  float64(carID),
-	}
+	userID := uid.(uint)
 
-	if err := h.Usecase.AddFavorite(&fav, uint(carID)); err != nil {
+	status, err := h.Usecase.ToggleFavorite(userID, uint(carID))
+	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(fiber.Map{"message": "Added to favorites"})
+	return c.JSON(fiber.Map{"status": status, "message": "Favorite toggled successfully"})
 }
 
 // DELETE /favorites/:car_id

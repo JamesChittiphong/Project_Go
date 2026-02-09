@@ -2,13 +2,13 @@ package review
 
 import (
 	"Backend_Go/internal/entities"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 	"errors"
 )
 
 type ReviewUsecase struct {
-	ReviewRepo *repositroies.ReviewRepository
-	DealerRepo *repositroies.DealerRepository
+	ReviewRepo *repositories.ReviewRepository
+	DealerRepo *repositories.DealerRepository
 }
 
 // ลูกค้ารีวิวร้าน

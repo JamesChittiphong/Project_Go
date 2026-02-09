@@ -2,23 +2,24 @@ package favorite
 
 import (
 	"Backend_Go/internal/entities"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 	"errors"
 )
 
 type FavoriteUsecase struct {
-	FavoriteRepo *repositroies.FavoriteRepository
-	CarRepo      *repositroies.CarRepository
+	FavoriteRepo *repositories.FavoriteRepository
+	CarRepo      *repositories.CarRepository
 }
 
-// เพิ่มรถที่ชอบ
-func (u *FavoriteUsecase) AddFavorite(fav interface{}, carID uint) error {
+// ToggleFavourite เพิ่มหรือลบรถที่ชอบ
+func (u *FavoriteUsecase) ToggleFavorite(userID, carID uint) (string, error) {
 	// ตรวจสอบว่ารถมีอยู่
 	var car entities.Car
 	if err := u.CarRepo.FindByID(carID, &car); err != nil {
-		return errors.New("ไม่พบรถ")
+		return "", errors.New("ไม่พบรถ")
 	}
-	return u.FavoriteRepo.Create(fav)
+
+	return u.FavoriteRepo.Toggle(userID, carID)
 }
 
 // ดูรถที่ชอบทั้งหมด

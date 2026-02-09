@@ -2,13 +2,13 @@ package carimage
 
 import (
 	"Backend_Go/internal/entities"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 	"errors"
 )
 
 type CarImageUsecase struct {
-	CarImageRepo *repositroies.CarImageRepository
-	CarRepo      *repositroies.CarRepository
+	CarImageRepo *repositories.CarImageRepository
+	CarRepo      *repositories.CarRepository
 }
 
 // CreateCarImage creates a new car image

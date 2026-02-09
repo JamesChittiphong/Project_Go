@@ -28,13 +28,18 @@ type Dealer struct {
 	Province   string `json:"province"`
 	Latitude   string `json:"latitude"`
 	Longitude  string `json:"longitude"`
-	IsApproved bool   `gorm:"default:false" json:"is_approved"`
+	Status     string `gorm:"default:'pending';type:varchar(20)" json:"status"` // pending, approved, suspended
+	IsApproved bool   `gorm:"default:false" json:"is_approved"`                 // Keep for backward compatibility or remove later
 
 	User User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
 type Car struct {
-	gorm.Model
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
 	DealerID     uint    `gorm:"index" json:"dealer_id"`
 	Brand        string  `json:"brand"`
 	ModelName    string  `json:"model_name"`
@@ -46,7 +51,7 @@ type Car struct {
 	Transmission string  `json:"transmission"`
 	Color        string  `json:"color"`
 	Description  string  `gorm:"type:text" json:"description"`
-	Status       string  `gorm:"type:varchar(20)" json:"status"`
+	Status       string  `gorm:"default:'pending';type:varchar(20)" json:"status"` // pending, approved, rejected, delete_requested, selling, sold
 	Views        int     `gorm:"default:0" json:"views"`
 	IsFeatured   bool    `gorm:"default:false" json:"is_featured"`
 	// Contact / promotion statistics
@@ -70,7 +75,7 @@ type CarImage struct {
 	ImageURL  string `json:"image_url"`
 	SortOrder int    `json:"sort_order"`
 
-	Car Car `gorm:"foreignKey:CarID" json:"car,omitempty"`
+	Car Car `gorm:"foreignKey:CarID" json:"-"`
 }
 
 type Lead struct {
@@ -83,8 +88,10 @@ type Lead struct {
 
 type Favorite struct {
 	gorm.Model
-	UserID uint `gorm:"index"`
-	CarID  uint `gorm:"index"`
+	UserID uint `gorm:"uniqueIndex:idx_fav_user_car" json:"user_id"`
+	CarID  uint `gorm:"uniqueIndex:idx_fav_user_car" json:"car_id"`
+
+	Car Car `gorm:"foreignKey:CarID" json:"car"`
 }
 
 type Review struct {
@@ -100,4 +107,32 @@ type Report struct {
 	CarID  uint `gorm:"index"`
 	UserID *uint
 	Reason string
+}
+
+type Conversation struct {
+	gorm.Model
+	UserID            uint      `gorm:"uniqueIndex:idx_user_dealer;index" json:"user_id"`   // Customer User ID
+	DealerID          uint      `gorm:"uniqueIndex:idx_user_dealer;index" json:"dealer_id"` // Dealer ID (from Dealer table)
+	CarID             *uint     `json:"car_id"`
+	Topic             string    `json:"topic"`
+	UnreadCountUser   int       `gorm:"default:0" json:"unread_count_user"`
+	UnreadCountDealer int       `gorm:"default:0" json:"unread_count_dealer"`
+	LastMessageID     *uint     `gorm:"index" json:"last_message_id"`
+	LastMessage       string    `gorm:"type:text" json:"last_message"` // Cache content for preview
+	UpdatedAt         time.Time `json:"updated_at"`
+
+	User   User   `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Dealer Dealer `gorm:"foreignKey:DealerID" json:"dealer,omitempty"`
+	Car    *Car   `gorm:"foreignKey:CarID" json:"car,omitempty"`
+}
+
+type Message struct {
+	gorm.Model
+	ConversationID uint   `gorm:"index"`
+	SenderID       uint   `gorm:"index"` // UserID of sender
+	Content        string `gorm:"type:text"`
+	MsgType        string `gorm:"type:varchar(20);default:'text'"` // text, image
+	IsRead         bool   `gorm:"default:false"`
+
+	Conversation Conversation `gorm:"foreignKey:ConversationID"`
 }

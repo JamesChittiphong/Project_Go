@@ -2,12 +2,12 @@ package user
 
 import (
 	"Backend_Go/internal/entities"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 )
 
 // จัดการผู้ใช้งาน (สมัคร / โปรไฟล์ / แอดมิน)
 type UserUsecase struct {
-	UserRepo repositroies.UserRepository
+	UserRepo repositories.UserRepository
 }
 
 // สร้างผู้ใช้ใหม่

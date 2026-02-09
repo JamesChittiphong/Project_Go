@@ -20,7 +20,7 @@ func (h *DealerHandler) CreateDealer(c *fiber.Ctx) error {
 // GET /dealers
 func (h *DealerHandler) GetDealers(c *fiber.Ctx) error {
 	var dealers []*entities.Dealer
-	if err := h.Usecase.GetAllDealers(&dealers); err != nil {
+	if err := h.Usecase.GetPublicDealers(&dealers); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(dealers)

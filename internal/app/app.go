@@ -2,18 +2,21 @@ package app
 
 import (
 	"Backend_Go/internal/controller/deliveries/http"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 	"Backend_Go/internal/routes"
+	"Backend_Go/internal/ws"
 
 	adminUC "Backend_Go/internal/usecases/admin"
 	authUC "Backend_Go/internal/usecases/auth"
 	carUC "Backend_Go/internal/usecases/car"
 	carImageUC "Backend_Go/internal/usecases/car_image"
+	"Backend_Go/internal/usecases/chat"
 	dealerUC "Backend_Go/internal/usecases/dealer"
 	favoriteUC "Backend_Go/internal/usecases/favorite"
 	lendUC "Backend_Go/internal/usecases/lend"
 	reviewUC "Backend_Go/internal/usecases/review"
 	userUC "Backend_Go/internal/usecases/user"
+	_ "Backend_Go/internal/ws"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -42,16 +45,16 @@ func NewApp(db *gorm.DB) *fiber.App {
 	// =====================================================
 	// REPOSITORIES
 	// =====================================================
-	carRepo := &repositroies.CarRepository{DB: db}
-	carImageRepo := &repositroies.CarImageRepository{DB: db}
-	dealerRepo := &repositroies.DealerRepository{DB: db}
-	leadRepo := &repositroies.LeadRepository{DB: db}
-	favoriteRepo := &repositroies.FavoriteRepository{DB: db}
-	reviewRepo := &repositroies.ReviewRepository{DB: db}
-	reportRepo := &repositroies.ReportRepository{DB: db}
+	carRepo := &repositories.CarRepository{DB: db}
+	carImageRepo := &repositories.CarImageRepository{DB: db}
+	dealerRepo := &repositories.DealerRepository{DB: db}
+	leadRepo := &repositories.LeadRepository{DB: db}
+	favoriteRepo := &repositories.FavoriteRepository{DB: db}
+	reviewRepo := &repositories.ReviewRepository{DB: db}
+	reportRepo := &repositories.ReportRepository{DB: db}
 
-	userRepo := repositroies.NewUserRepository(db)
-	refreshTokenRepo := repositroies.NewRefreshTokenRepository(db)
+	userRepo := repositories.NewUserRepository(db)
+	refreshTokenRepo := repositories.NewRefreshTokenRepository(db)
 
 	// =====================================================
 	// USECASES
@@ -123,6 +126,23 @@ func NewApp(db *gorm.DB) *fiber.App {
 	// =====================================================
 	// ROUTES
 	// =====================================================
+	// Chat Initialization
+	chatHub := ws.NewHub()
+	go chatHub.Run()
+
+	chatRepo := &repositories.ChatRepository{DB: db}
+	chatUsecase := &chat.ChatUsecase{
+		ChatRepo:   chatRepo,
+		DealerRepo: dealerRepo,
+		Hub:        chatHub,
+	}
+	chatHandler := &http.ChatHandler{
+		Usecase:    chatUsecase,
+		DealerRepo: dealerRepo,
+		Hub:        chatHub,
+	}
+
+	// Setup Routes
 	routes.SetupRoutes(
 		app,
 		carHandler,
@@ -134,6 +154,8 @@ func NewApp(db *gorm.DB) *fiber.App {
 		carImageHandler,
 		adminHandler,
 		authHandler,
+		chatHandler,
+		dealerRepo,
 	)
 
 	return app

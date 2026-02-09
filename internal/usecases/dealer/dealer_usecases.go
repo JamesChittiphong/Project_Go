@@ -2,24 +2,51 @@ package dealer
 
 import (
 	"Backend_Go/internal/entities"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 )
 
 // จัดการร้านค้า
 type DealerUsecase struct {
-	DealerRepo *repositroies.DealerRepository
-	CarRepo    *repositroies.CarRepository
-	ReviewRepo *repositroies.ReviewRepository
+	DealerRepo *repositories.DealerRepository
+	CarRepo    *repositories.CarRepository
+	ReviewRepo *repositories.ReviewRepository
 }
 
 // สมัคร / สร้างร้านค้า
 func (u *DealerUsecase) CreateDealer(dealer *entities.Dealer) error {
+	// Status default is pending
+	dealer.Status = "pending"
+	dealer.IsApproved = false
 	return u.DealerRepo.Create(dealer)
 }
 
-// ดูร้านค้าทั้งหมด (หน้าเว็บ / แอดมิน)
-func (u *DealerUsecase) GetAllDealers(dealers *[]*entities.Dealer) error {
+// ดูร้านค้าทั้งหมด (หน้าเว็บ Public) - Only Approved
+func (u *DealerUsecase) GetPublicDealers(dealers *[]*entities.Dealer) error {
+	return u.DealerRepo.FindApproved(dealers)
+}
+
+// ดูร้านค้าทั้งหมด (Admin)
+func (u *DealerUsecase) GetAllDealersAdmin(dealers *[]*entities.Dealer) error {
 	return u.DealerRepo.FindAll(dealers)
+}
+
+// Admin: Set Status
+func (u *DealerUsecase) SetDealerStatus(id uint, status string) error {
+	var dealer entities.Dealer
+	if err := u.DealerRepo.FindByID(id, &dealer); err != nil {
+		return err
+	}
+	dealer.Status = status
+	dealer.IsApproved = (status == "approved")
+	return u.DealerRepo.Update(&dealer)
+}
+
+func (u *DealerUsecase) ApproveDealer(id uint) error {
+	return u.SetDealerStatus(id, "approved")
+}
+
+func (u *DealerUsecase) RejectDealer(id uint) error {
+	return u.SetDealerStatus(id, "rejected") // or suspended
 }
 
 // ดูร้านค้ารายเดียว

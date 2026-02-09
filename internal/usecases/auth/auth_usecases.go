@@ -3,7 +3,7 @@ package auth
 import (
 	"Backend_Go/internal/entities"
 	"Backend_Go/internal/middleware"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 	"Backend_Go/utils"
 	"errors"
 	"log"
@@ -11,15 +11,15 @@ import (
 )
 
 type authUsecase struct {
-	userRepo    repositroies.UserRepository
-	dealerRepo  *repositroies.DealerRepository
-	refreshRepo repositroies.RefreshTokenRepository
+	userRepo    repositories.UserRepository
+	dealerRepo  *repositories.DealerRepository
+	refreshRepo repositories.RefreshTokenRepository
 }
 
 func NewAuthUsecase(
-	userRepo repositroies.UserRepository,
-	dealerRepo *repositroies.DealerRepository,
-	refreshRepo repositroies.RefreshTokenRepository,
+	userRepo repositories.UserRepository,
+	dealerRepo *repositories.DealerRepository,
+	refreshRepo repositories.RefreshTokenRepository,
 ) AuthUsecase {
 	return &authUsecase{userRepo, dealerRepo, refreshRepo}
 }
@@ -40,6 +40,7 @@ func (u *authUsecase) RegisterUser(
 		Phone:    phone,
 		Password: hash,
 		Role:     role,
+		IsActive: true,
 	}
 
 	log.Printf("Registering user - Email: %s, Role: %s, Password Length: %d", email, role, len(password))
@@ -145,6 +146,7 @@ func (u *authUsecase) RegisterDealer(
 		Province:   province,
 		Latitude:   latitude,
 		Longitude:  longitude,
+		Status:     "pending",
 		IsApproved: false,
 	}
 

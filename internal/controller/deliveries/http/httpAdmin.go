@@ -53,6 +53,30 @@ func (h *AdminHandler) ApproveDealer(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "ดำเนินการเรียบร้อย"})
 }
 
+// POST /admin/cars/:id/approve
+func (h *AdminHandler) ApproveCar(c *fiber.Ctx) error {
+	id, _ := c.ParamsInt("id")
+	if err := h.Usecase.ApproveCar(uint(id)); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "อนุมัติรถเรียบร้อย"})
+}
+
+// POST /admin/cars/:id/reject
+func (h *AdminHandler) RejectCar(c *fiber.Ctx) error {
+	id, _ := c.ParamsInt("id")
+	var req struct {
+		Reason string `json:"reason"`
+	}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err := h.Usecase.RejectCar(uint(id), req.Reason); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "ปฏิเสธรถและแจ้งเหตุผลเรียบร้อย"})
+}
+
 // POST /admin/cars/:id/hide
 func (h *AdminHandler) HideCar(c *fiber.Ctx) error {
 	id, _ := c.ParamsInt("id")
@@ -83,6 +107,24 @@ func (h *AdminHandler) FlagCar(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "ดำเนินการเรียบร้อย"})
 }
 
+// POST /admin/dealers/:id/reject
+func (h *AdminHandler) RejectDealer(c *fiber.Ctx) error {
+	id, _ := c.ParamsInt("id")
+	if err := h.Usecase.RejectDealer(uint(id)); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "ปฏิเสธร้านค้าเรียบร้อย"})
+}
+
+// GET /admin/cars (See all cars)
+func (h *AdminHandler) GetCars(c *fiber.Ctx) error {
+	var cars []*entities.Car
+	if err := h.Usecase.GetAllCars(&cars); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(cars)
+}
+
 // DELETE /admin/cars/:id
 func (h *AdminHandler) DeleteCar(c *fiber.Ctx) error {
 	id, _ := c.ParamsInt("id")
@@ -90,6 +132,33 @@ func (h *AdminHandler) DeleteCar(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(fiber.Map{"message": "ลบรถเรียบร้อยโดยแอดมิน"})
+}
+
+// PATCH /admin/users/:id/ban
+func (h *AdminHandler) BanUser(c *fiber.Ctx) error {
+	id, _ := c.ParamsInt("id")
+	if err := h.Usecase.BanUser(uint(id)); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "ผู้ใช้ถูกระงับการใช้งานและถูกแบน"})
+}
+
+// PATCH /admin/users/:id/unban
+func (h *AdminHandler) UnbanUser(c *fiber.Ctx) error {
+	id, _ := c.ParamsInt("id")
+	if err := h.Usecase.UnbanUser(uint(id)); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "ยกเลิกการแบนผู้ใช้"})
+}
+
+// PATCH /admin/dealers/:id/suspend
+func (h *AdminHandler) SuspendDealer(c *fiber.Ctx) error {
+	id, _ := c.ParamsInt("id")
+	if err := h.Usecase.SuspendDealer(uint(id)); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "ระงับร้านค้าและแบนผู้ใช้เริ่มต้น"})
 }
 
 func interfaceSlice[T any](in []T) []interface{} {

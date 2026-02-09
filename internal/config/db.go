@@ -39,7 +39,7 @@ func ConnectDB() (db *gorm.DB, err error) {
 		return nil, err
 	}
 
-	// Auto migrate tables
+	// Auto Migrate
 	err = db.AutoMigrate(
 		&entities.User{},
 		&entities.Dealer{},
@@ -50,9 +50,20 @@ func ConnectDB() (db *gorm.DB, err error) {
 		&entities.Review{},
 		&entities.Report{},
 		&entities.RefreshToken{},
+		&entities.Conversation{},
+		&entities.Message{},
 	)
 	if err != nil {
-		log.Fatal("AutoMigrate error:", err)
+		return nil, err
+	}
+
+	// MIGRATION: Fix existing cars with empty status -> 'approved'
+	// This ensures existing cars don't disappear from public listing.
+	// Only affects rows where status is NULL or empty string.
+	if err := db.Model(&entities.Car{}).Where("status IS NULL OR status = ''").Update("status", "approved").Error; err != nil {
+		log.Printf("Migration warning: failed to update car statuses: %v", err)
+	} else {
+		log.Println("Migration: updated empty car statuses to 'approved'")
 	}
 
 	fmt.Println("Config Database Successful..")

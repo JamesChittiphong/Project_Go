@@ -2,17 +2,19 @@ package car
 
 import (
 	"Backend_Go/internal/entities"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 	"errors"
 	"time"
 )
 
 type CarUsecase struct {
-	CarRepo      *repositroies.CarRepository
-	DealerRepo   *repositroies.DealerRepository
-	LeadRepo     *repositroies.LeadRepository
-	FavoriteRepo *repositroies.FavoriteRepository
+	CarRepo      *repositories.CarRepository
+	DealerRepo   *repositories.DealerRepository
+	LeadRepo     *repositories.LeadRepository
+	FavoriteRepo *repositories.FavoriteRepository
 }
+
+// ---------- Core ----------
 
 // ---------- Core ----------
 
@@ -26,10 +28,20 @@ func (u *CarUsecase) CreateCar(car *entities.Car) error {
 		return errors.New("dealer not found")
 	}
 
+	// Enforce default status
+	car.Status = "pending"
+	car.IsHidden = false
+
 	return u.CarRepo.Create(car)
 }
 
-func (u *CarUsecase) GetAllCars(cars *[]*entities.Car) error {
+// GetPublicCars returns only approved cars
+func (u *CarUsecase) GetPublicCars(cars *[]*entities.Car) error {
+	return u.CarRepo.FindPublic(cars)
+}
+
+// GetAdminCars returns all cars for admin dashboard
+func (u *CarUsecase) GetAdminCars(cars *[]*entities.Car) error {
 	return u.CarRepo.FindAll(cars)
 }
 
@@ -45,9 +57,13 @@ func (u *CarUsecase) UpdateCar(car *entities.Car) error {
 	if car.ID == 0 {
 		return errors.New("car_id is required")
 	}
+	// When updating, status might need to be reset to pending if critical info changes?
+	// For now, keep existing status logic or require separate flow.
+	// We will trust the passed entity, but the handler should be careful.
 	return u.CarRepo.Update(car)
 }
 
+// DeleteCarByUser requests deletion instead of immediate delete
 func (u *CarUsecase) DeleteCarByUser(carID uint, userID uint) error {
 	var dealer entities.Dealer
 	if err := u.DealerRepo.FindByUserID(userID, &dealer); err != nil {
@@ -63,11 +79,14 @@ func (u *CarUsecase) DeleteCarByUser(carID uint, userID uint) error {
 		return errors.New("forbidden")
 	}
 
-	return u.CarRepo.Delete(carID)
+	// Request delete
+	car.Status = "delete_requested"
+	return u.CarRepo.Update(&car)
 }
 
 // ---------- Business ----------
 
+// Admin: Set Status Directly
 func (u *CarUsecase) SetStatus(carID uint, status string) error {
 	if status == "" {
 		return errors.New("status is required")
@@ -80,6 +99,27 @@ func (u *CarUsecase) SetStatus(carID uint, status string) error {
 
 	car.Status = status
 	return u.CarRepo.Update(&car)
+}
+
+// Admin: Approve
+func (u *CarUsecase) ApproveCar(carID uint) error {
+	return u.SetStatus(carID, "approved")
+}
+
+// Admin: Reject
+func (u *CarUsecase) RejectCar(carID uint, reason string) error {
+	var car entities.Car
+	if err := u.CarRepo.FindByID(carID, &car); err != nil {
+		return err
+	}
+	car.Status = "rejected"
+	car.ViolationReason = reason
+	return u.CarRepo.Update(&car)
+}
+
+// Admin: Confirm Delete
+func (u *CarUsecase) ConfirmDeleteCar(carID uint) error {
+	return u.CarRepo.Delete(carID)
 }
 
 func (u *CarUsecase) RecordContact(carID uint, dealerID uint, via string) error {

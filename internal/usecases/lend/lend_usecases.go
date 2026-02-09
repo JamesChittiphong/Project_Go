@@ -2,14 +2,14 @@ package lend
 
 import (
 	"Backend_Go/internal/entities"
-	"Backend_Go/internal/repositroies"
+	"Backend_Go/internal/repositories"
 	"errors"
 )
 
 type LeadUsecase struct {
-	LeadRepo   *repositroies.LeadRepository
-	CarRepo    *repositroies.CarRepository
-	DealerRepo *repositroies.DealerRepository
+	LeadRepo   *repositories.LeadRepository
+	CarRepo    *repositories.CarRepository
+	DealerRepo *repositories.DealerRepository
 }
 
 // ลูกค้าส่งข้อมูลติดต่อร้าน
